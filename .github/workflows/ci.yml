@@ -1,0 +1,20 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  swift:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: swift build
+      - name: Test
+        run: swift test
+      - name: Demo smoke test
+        run: |
+          swift build
+          HT_STORE=/tmp/ht-demo.json .build/debug/ht demo
+          HT_STORE=/tmp/ht-demo.json .build/debug/ht list
+          HT_STORE=/tmp/ht-demo.json .build/debug/ht progress
