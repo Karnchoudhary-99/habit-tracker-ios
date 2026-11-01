@@ -57,6 +57,18 @@ computes the next occurrence. On iOS this maps directly onto
 `UNCalendarNotificationTrigger` — the engine deliberately keeps the
 computation platform-free so it is testable on Linux too.
 
+## More commands
+
+```sh
+HT_STORE=habits.json .build/release/ht calendar Gym --month 2026-11
+HT_STORE=habits.json .build/release/ht export --format csv
+HT_STORE=habits.json .build/release/ht archive "Read 20 pages"
+HT_STORE=habits.json .build/release/ht list --all
+```
+
+The calendar view marks done (✓), missed scheduled days (○) and
+unscheduled/future days (·); export dumps completions as CSV or JSON.
+
 ## Tests
 
 ```sh
