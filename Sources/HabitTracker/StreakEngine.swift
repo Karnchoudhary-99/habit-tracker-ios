@@ -13,21 +13,22 @@ public struct StreakEngine {
     /// today is not done yet (an untrained today must not break the run).
     public func currentStreak(habit: Habit, completedDays: Set<Date>, today: Date) -> Int {
         let todayStart = calendar.startOfDay(for: today)
-        var anchor = todayStart
-        if !completedDays.contains(todayStart) {
-            anchor = calendar.addingDays(-1, to: todayStart)
-            guard completedDays.contains(anchor) else { return 0 }
-        }
         var streak = 0
-        var day = anchor
-        while true {
+        var day = todayStart
+        var skippedToday = false
+        while day >= habit.createdDay {
             if habit.isScheduled(on: day, calendar: calendar) {
-                guard completedDays.contains(day) else { break }
-                streak += 1
+                if completedDays.contains(day) {
+                    streak += 1
+                } else if day == todayStart && !skippedToday {
+                    // Today is scheduled but not done yet: it must not break
+                    // the run — keep counting from the previous scheduled day.
+                    skippedToday = true
+                } else {
+                    break
+                }
             }
-            if day <= habit.createdDay && streak > 0 { break }
             guard let prev = calendar.date(byAdding: .day, value: -1, to: day) else { break }
-            if prev < habit.createdDay { break }
             day = prev
             // Safety bound: no streak can exceed the days since creation + 1.
             if streak > 3660 { break }

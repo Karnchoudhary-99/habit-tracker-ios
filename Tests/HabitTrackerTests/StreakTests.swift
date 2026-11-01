@@ -48,6 +48,13 @@ final class StreakTests: XCTestCase {
         XCTAssertEqual(StreakEngine(calendar: calendar).currentStreak(habit: habit, completedDays: missed, today: day(2026, 11, 6)), 1)
     }
 
+    func testUnscheduledTodayDoesNotZeroStreak() throws {
+        // Mon/Wed/Fri habit; Nov 6 = Fri completed, Nov 8 = Sun (unscheduled).
+        let habit = try Habit(name: "Gym", frequency: .weekdays([.monday, .wednesday, .friday]), createdDay: day(2026, 11, 2), calendar: calendar)
+        let done = days([(2026, 11, 2), (2026, 11, 4), (2026, 11, 6)])
+        XCTAssertEqual(StreakEngine(calendar: calendar).currentStreak(habit: habit, completedDays: done, today: day(2026, 11, 8)), 3)
+    }
+
     func testWeekSummary() throws {
         let habit = try Habit(name: "Gym", frequency: .weekdays([.monday, .wednesday, .friday]), createdDay: day(2026, 11, 2), calendar: calendar)
         let done = days([(2026, 11, 2), (2026, 11, 4)])
