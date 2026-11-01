@@ -72,6 +72,9 @@ func usage() {
       ht progress [id-prefix|name] [--month YYYY-MM]
       ht remind <id-prefix|name> <HH:MM> [weekdays:1,3,5]
       ht reminders
+      ht archive <id-prefix|name>
+      ht export [--format csv|json] [id-prefix|name]
+      ht calendar [id-prefix|name] [--month YYYY-MM]
       ht demo
     """)
 }
@@ -185,6 +188,76 @@ case "reminders":
         let next = r.nextFire(after: Date(), calendar: calendar).map { fmtDay($0, calendar: calendar) + " " + r.timeString } ?? "—"
         print("\(name) at \(r.timeString)\(r.weekdays.map { " on " + $0.sorted().map(\.shortName).joined(separator: ",") } ?? "") next: \(next)")
     }
+
+case "archive":
+    guard args.count >= 2 else { fail("usage: ht archive <id-prefix|name>") }
+    let store = loadStore(path: storePath, calendar: calendar)
+    guard let habit = store.resolve(args[1]) else { fail("no habit matching '\(args[1])'") }
+    store.archive(id: habit.id)
+    saveStore(store, path: storePath)
+    print("archived \(habit.name) (still listed with --all)")
+
+case "export":
+    let store = loadStore(path: storePath, calendar: calendar)
+    let format = flagValue("--format", in: args) ?? "csv"
+    let targets = args.count >= 2 && !args[1].hasPrefix("--") ? [store.resolve(args[1])].compactMap { $0 } : store.habits
+    if format == "csv" {
+        print("habit_id,habit_name,day")
+        for h in targets {
+            for day in store.completedDays(for: h.id).sorted() {
+                let name = h.name.contains(",") ? "\"\(h.name)\"" : h.name
+                print("\(h.id.uuidString),\(name),\(fmtDay(day, calendar: calendar))")
+            }
+        }
+    } else if format == "json" {
+        let data = StoreData(habits: targets, completions: store.completions.filter { c in targets.map(\.id).contains(c.habitId) }, reminders: store.reminders.filter { r in targets.map(\.id).contains(r.habitId) })
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
+        print(String(data: try enc.encode(data), encoding: .utf8) ?? "")
+    } else {
+        fail("bad --format '\(format)' (csv | json)")
+    }
+
+case "calendar":
+    let store = loadStore(path: storePath, calendar: calendar)
+    let engine = StreakEngine(calendar: calendar)
+    guard let habit = args.count >= 2 && !args[1].hasPrefix("--") ? store.resolve(args[1]) : store.habits.first(where: { !$0.isArchived }) else {
+        fail("no habit found")
+    }
+    var year = calendar.component(.year, from: Date())
+    var month = calendar.component(.month, from: Date())
+    if let m = flagValue("--month", in: args) {
+        let parts = m.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 2 else { fail("bad --month (expected YYYY-MM)") }
+        year = parts[0]; month = parts[1]
+    }
+    let grid = engine.monthGrid(habit: habit, completedDays: store.completedDays(for: habit.id), year: year, month: month)
+    print("\(habit.icon) \(habit.name) — \(year)-\(String(format: "%02d", month))  (✓ done · ○ missed · · unscheduled)")
+    print("Mo Tu We Th Fr Sa Su")
+    var line = ""
+    let first = calendar.date(from: DateComponents(year: year, month: month, day: 1))!
+    // Pad to the Monday of the first week.
+    let weekday = calendar.component(.weekday, from: first) // 1 = Sun
+    let pad = (weekday + 5) % 7
+    for _ in 0..<pad { line += "   " }
+    let daysInMonth = calendar.range(of: .day, in: .month, for: first)?.count ?? 0
+    for d in 1...daysInMonth {
+        let day = calendar.date(from: DateComponents(year: year, month: month, day: d))!
+        let mark: String
+        if calendar.startOfDay(for: day) > calendar.startOfDay(for: Date()) {
+            mark = "·" // future days are not missed yet
+        } else if let done = grid[calendar.startOfDay(for: day)] {
+            mark = done ? "✓" : "○"
+        } else {
+            mark = "·"
+        }
+        line += String(format: "%2d%@", d, mark) + " "
+        if calendar.component(.weekday, from: day) == 1 { // Sunday ends the row
+            print(line.trimmingCharacters(in: .whitespaces))
+            line = ""
+        }
+    }
+    if !line.isEmpty { print(line.trimmingCharacters(in: .whitespaces)) }
 
 case "demo":
     let store = loadStore(path: storePath, calendar: calendar)
