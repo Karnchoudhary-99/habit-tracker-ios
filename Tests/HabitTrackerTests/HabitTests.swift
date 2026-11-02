@@ -50,4 +50,16 @@ final class HabitTests: XCTestCase {
         let decoded = try JSONDecoder().decode(Habit.self, from: data)
         XCTAssertEqual(decoded, habit)
     }
+
+    func testIsCompletedIgnoresTimeOfDay() throws {
+        let store = HabitStore(calendar: calendar)
+        let habit = try store.addHabit(Habit(name: "Read", calendar: calendar))
+        let morning = calendar.date(from: DateComponents(year: 2026, month: 11, day: 2, hour: 8))!
+        let evening = calendar.date(from: DateComponents(year: 2026, month: 11, day: 2, hour: 21))!
+        XCTAssertFalse(store.isCompleted(habitId: habit.id, on: morning))
+        XCTAssertTrue(store.complete(habitId: habit.id, on: morning))
+        XCTAssertTrue(store.isCompleted(habitId: habit.id, on: evening))
+        XCTAssertTrue(store.uncomplete(habitId: habit.id, on: evening))
+        XCTAssertFalse(store.isCompleted(habitId: habit.id, on: morning))
+    }
 }

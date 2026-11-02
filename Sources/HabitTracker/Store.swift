@@ -92,6 +92,11 @@ public final class HabitStore {
         Set(completions.filter { $0.habitId == habitId }.map { calendar.startOfDay(for: $0.day) })
     }
 
+    /// Whether the habit is already marked done on a day (start-of-day compared).
+    public func isCompleted(habitId: UUID, on date: Date) -> Bool {
+        completedDays(for: habitId).contains(calendar.startOfDay(for: date))
+    }
+
     public func addReminder(_ reminder: Reminder) {
         reminders.removeAll { $0.habitId == reminder.habitId && $0.hour == reminder.hour && $0.minute == reminder.minute }
         reminders.append(reminder)
