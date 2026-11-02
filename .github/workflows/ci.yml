@@ -27,4 +27,8 @@ jobs:
       - name: Build engine module
         run: swift build
       - name: Type-check SwiftUI app
-        run: swiftc -typecheck -I .build/debug App/*.swift
+        run: |
+          # SwiftPM's module dir varies by toolchain; locate it instead of guessing.
+          MOD=$(find .build/debug -name 'HabitTracker.swiftmodule' -print -quit)
+          if [ -z "$MOD" ]; then echo "HabitTracker.swiftmodule not found under .build/debug"; find .build/debug -maxdepth 2 | head -40; exit 1; fi
+          swiftc -typecheck -I "$(dirname "$MOD")" App/*.swift
