@@ -20,15 +20,10 @@ jobs:
           HT_STORE=/tmp/ht-demo.json .build/debug/ht progress
   swiftui:
     # App/ is not a SwiftPM target (SwiftUI is Apple-only, while the engine
-    # also builds on Linux), so type-check it against the built engine module.
+    # also builds on Linux), so type-check it together with the engine
+    # sources as one module instead of depending on SwiftPM's build layout.
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build engine module
-        run: swift build
       - name: Type-check SwiftUI app
-        run: |
-          # SwiftPM's module dir varies by toolchain; locate it instead of guessing.
-          MOD=$(find .build/debug -name 'HabitTracker.swiftmodule' -print -quit)
-          if [ -z "$MOD" ]; then echo "HabitTracker.swiftmodule not found under .build/debug"; find .build/debug -maxdepth 2 | head -40; exit 1; fi
-          swiftc -typecheck -I "$(dirname "$MOD")" App/*.swift
+        run: swiftc -typecheck -module-name HabitTracker Sources/HabitTracker/*.swift App/*.swift

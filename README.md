@@ -30,8 +30,8 @@ the two:
 Apple platforms, while the engine package also builds on Linux. To run
 it: in Xcode create a new iOS App project, add this package as a local
 dependency, add the files in `App/` to the app target, and run on a
-device or simulator. CI type-checks `App/*.swift` against the built
-engine module on macOS, so the app sources stay compilable even though
+device or simulator. CI type-checks `App/*.swift` together with the
+engine sources on macOS, so the app sources stay compilable even though
 they can't build on Linux.
 
 ## Quick start
