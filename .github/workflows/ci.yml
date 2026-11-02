@@ -26,4 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Type-check SwiftUI app
-        run: swiftc -typecheck -module-name HabitTracker Sources/HabitTracker/*.swift App/*.swift
+        run: |
+          # Target iOS explicitly: plain swiftc defaults to macOS, where
+          # iOS-only modifiers (e.g. navigationBarTitleDisplayMode) fail.
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          swiftc -typecheck -sdk "$SDK" -target arm64-apple-ios17.0 \
+            -module-name HabitTracker Sources/HabitTracker/*.swift App/*.swift
