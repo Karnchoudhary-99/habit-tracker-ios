@@ -18,3 +18,17 @@ jobs:
           HT_STORE=/tmp/ht-demo.json .build/debug/ht demo
           HT_STORE=/tmp/ht-demo.json .build/debug/ht list
           HT_STORE=/tmp/ht-demo.json .build/debug/ht progress
+  swiftui:
+    # App/ is not a SwiftPM target (SwiftUI is Apple-only, while the engine
+    # also builds on Linux), so type-check it together with the engine
+    # sources as one module instead of depending on SwiftPM's build layout.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Type-check SwiftUI app
+        run: |
+          # Target iOS explicitly: plain swiftc defaults to macOS, where
+          # iOS-only modifiers (e.g. navigationBarTitleDisplayMode) fail.
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          swiftc -typecheck -sdk "$SDK" -target arm64-apple-ios17.0 \
+            -module-name HabitTracker Sources/HabitTracker/*.swift App/*.swift
