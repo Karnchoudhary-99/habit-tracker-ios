@@ -89,8 +89,11 @@ struct HabitDetailView: View {
                     LazyVGrid(
                         columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 6
                     ) {
-                        ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { label in
-                            Text(label).font(.caption).foregroundStyle(.secondary)
+                        // Header labels repeat ("T", "S"), so iterate by
+                        // index — using the labels as IDs would duplicate them.
+                        let headerLabels = ["S", "M", "T", "W", "T", "F", "S"]
+                        ForEach(headerLabels.indices, id: \.self) { i in
+                            Text(headerLabels[i]).font(.caption).foregroundStyle(.secondary)
                         }
                         // Leading blanks so day 1 lands under its weekday.
                         if let first = daysInMonth.first {
